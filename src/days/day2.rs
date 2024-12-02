@@ -1,19 +1,19 @@
 use std::{fs, u16};
 
 #[derive(PartialEq, Eq)]
-enum LevelDirection {
+enum ReportDirection {
     Increasing,
     Decreasing,
     Constant,
 }
 
-fn get_current_level_direction(prev_value: &i8, curr_value: &i8) -> LevelDirection {
-    let direction: LevelDirection = if curr_value > prev_value {
-        LevelDirection::Increasing
+fn get_current_report_direction(prev_value: &i8, curr_value: &i8) -> ReportDirection {
+    let direction: ReportDirection = if curr_value > prev_value {
+        ReportDirection::Increasing
     } else if curr_value < prev_value {
-        LevelDirection::Decreasing
+        ReportDirection::Decreasing
     } else {
-        LevelDirection::Constant
+        ReportDirection::Constant
     };
     direction
 }
@@ -27,33 +27,45 @@ fn is_distance_small(prev_value: &i8, curr_value: &i8) -> bool {
     }
 }
 
-fn test_level_safety(level: Vec<i8>) -> bool {
-    let first_of_level: &i8 = level.get(0).expect("Empty level");
-    let second_of_level: &i8 = level.get(1).expect("Level with only one element");
-    let level_direction = get_current_level_direction(first_of_level, second_of_level);
-    for (prev, curr) in level.iter().zip(level.clone().iter().skip(1)) {
-        let current_direction = get_current_level_direction(prev, curr);
-        if current_direction != level_direction {
-            return false;
-        }
+fn test_report_safety(report: Vec<i8>, dampened: bool) -> bool {
+    let first_level: &i8 = report.get(0).expect("Empty report");
+    let second_level: &i8 = report.get(1).expect("report with only one element");
+    let report_direction = get_current_report_direction(first_level, second_level);
+    for (prev, curr) in report.iter().zip(report.clone().iter().skip(1)) {
+        let current_direction = get_current_report_direction(prev, curr);
         let current_distance = is_distance_small(prev, curr);
-        if !current_distance {
-            return false;
+
+        if current_direction != report_direction || !current_distance {
+            if !dampened {
+                for (index, _value) in report.iter().enumerate() {
+                    let mut dampened_report = report.clone();
+                    dampened_report.remove(index);
+                    if test_report_safety(dampened_report, true) {
+                        return true;
+                    }
+                }
+            }
+            {
+                return false;
+            }
         }
     }
     true
 }
 
-fn count_safe_levels(input_path: String) -> u16 {
+fn count_safe_reports(input_path: String, dampener: bool) -> u16 {
     let contents = fs::read_to_string(input_path).expect("Trouble reading file");
     let mut safe_counter: u16 = 0;
     for line in contents.lines() {
-        let level: Vec<i8> = line
+        let report: Vec<i8> = line
             .split_whitespace()
             .map(|x| x.parse::<i8>().unwrap())
             .collect();
-        let level_safe: bool = test_level_safety(level);
-        if level_safe {
+        let report_safe: bool = match dampener {
+            true => test_report_safety(report, false),
+            false => test_report_safety(report, true),
+        };
+        if report_safe {
             safe_counter += 1
         }
     }
@@ -61,6 +73,8 @@ fn count_safe_levels(input_path: String) -> u16 {
 }
 
 pub fn complete_day_2(input_path: String) {
-    let n_safe = count_safe_levels(input_path);
-    println!("N safe levels: {}", n_safe)
+    let n_safe_normal = count_safe_reports(input_path.clone(), false);
+    let n_safe_dampened = count_safe_reports(input_path.clone(), true);
+    println!("N safe reports without dampener: {}", n_safe_normal);
+    println!("N safe reports with dampener: {}", n_safe_dampened)
 }
