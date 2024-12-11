@@ -3,6 +3,7 @@ mod days {
     pub mod day2;
     pub mod day3;
     pub mod day4;
+    pub mod day5;
 }
 fn day1() {
     let day_1_input = String::from("input/day1/input.txt");
@@ -23,6 +24,10 @@ fn day4() {
     days::day4::complete_day_4(day_4_input)
 }
 
+fn day5() {
+    let day_5_input = String::from("input/day5/test_input.txt");
+    days::day5::complete_day_5(day_5_input)
+}
 fn main() {
-    day4()
+    day5()
 }
